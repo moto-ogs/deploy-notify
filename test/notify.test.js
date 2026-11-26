@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { resolveOutcome, reachesChannel } = require('../src/outcomes.js');
 const { parsePullRequest, collectChanges } = require('../src/changes.js');
-const { deployMessage, releaseNotesMessage } = require('../src/messages.js');
+const { deployMessage, releaseNotesMessage, descriptionMessages } = require('../src/messages.js');
 
 const REPO = 'https://github.com/moto-ogs/demo';
 
@@ -97,7 +97,7 @@ test('direct pushes, squash merges and locally merged integration branches are l
   ]);
 });
 
-test('release notes group by kind and count internal work', () => {
+test('release notes group by kind, internal work last', () => {
   const text = notesText([
     { number: 2, title: 'feat(frontend): b <gebaut> & fertig' },
     { number: 1, title: 'fix: A behoben' },
@@ -119,7 +119,9 @@ test('release notes group by kind and count internal work', () => {
       '*Änderungen*',
       `• Blog: Gründungsgeschichte <${REPO}/pull/5|#5>`,
       '',
-      '_Dazu 2 interne Änderungen (Wartung, Tests, Doku)._',
+      '*Sonstiges*',
+      `• Bump <${REPO}/pull/6|#6>`,
+      `• Readme <${REPO}/commit/abcdef1234|abcdef1>`,
     ].join('\n'),
   );
 });
@@ -143,6 +145,29 @@ test('an empty range says so', () => {
     notesText([]),
     `*Release Notes* · keine Änderungen seit dem letzten Deploy · <${REPO}/compare/aaaaaaa1...bbbbbbb2|Diff>`,
   );
+});
+
+test('the pull request description follows as Markdown, split when long', () => {
+  const pullRequest = { number: 4, title: 'Release' };
+  const [short, ...none] = descriptionMessages({
+    pullRequest,
+    body: '<!-- Vorlage -->\r\n## Neu\r\n\r\n- **Export** als PDF\r\n',
+    repoUrl: REPO,
+  });
+  assert.deepEqual(none, []);
+  assert.equal(short.text, 'Beschreibung von #4');
+  assert.deepEqual(short.blocks, [
+    { type: 'section', text: { type: 'mrkdwn', text: `*Beschreibung* · <${REPO}/pull/4|#4>` } },
+    { type: 'markdown', text: '## Neu\n\n- **Export** als PDF\n' },
+  ]);
+
+  const long = descriptionMessages({ pullRequest, body: `${'Zeile mit Text\n'.repeat(2000)}`, repoUrl: REPO });
+  assert.equal(long.length, 3);
+  assert.equal(long[1].blocks.length, 1);
+  for (const message of long) assert.ok(message.blocks.at(-1).text.length <= 12000);
+
+  assert.deepEqual(descriptionMessages({ pullRequest, body: null, repoUrl: REPO }), []);
+  assert.deepEqual(descriptionMessages({ pullRequest, body: '<!-- nur Vorlage -->\n\n', repoUrl: REPO }), []);
 });
 
 test('deploy message: success line and failure details', () => {

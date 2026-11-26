@@ -26,6 +26,10 @@ function createGitHub({ apiUrl, token, repo }) {
       return (await get(`/commits/${sha}`)).commit.message;
     },
 
+    async pullRequestBody(number) {
+      return (await get(`/pulls/${number}`)).body;
+    },
+
     // The commit of the last earlier run in which the job this step runs in
     // succeeded on this branch. Matching the job, not the run, keeps other
     // targets of a shared workflow (a demo deploy from main) out of the answer.

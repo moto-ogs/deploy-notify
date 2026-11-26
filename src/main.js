@@ -2,7 +2,7 @@
 
 const { resolveOutcome, reachesChannel } = require('./outcomes.js');
 const { parsePullRequest, collectChanges } = require('./changes.js');
-const { deployMessage, releaseNotesMessage } = require('./messages.js');
+const { deployMessage, releaseNotesMessage, descriptionMessages } = require('./messages.js');
 const { createGitHub } = require('./github.js');
 const { createSlack } = require('./slack.js');
 
@@ -56,6 +56,7 @@ async function run() {
   const post = createSlack({ token, channel, dryRun });
 
   const headMessage = await optional('the deployed commit', () => github.commitMessage(sha));
+  const pullRequest = headMessage && parsePullRequest(headMessage);
 
   const threadTs = await post(
     deployMessage({
@@ -65,7 +66,7 @@ async function run() {
       version: input('version'),
       repoUrl,
       sha,
-      pullRequest: headMessage && parsePullRequest(headMessage),
+      pullRequest,
       actor: env.GITHUB_ACTOR,
       runUrl: `${repoUrl}/actions/runs/${env.GITHUB_RUN_ID}`,
       exitCode,
@@ -89,11 +90,15 @@ async function run() {
     ),
   );
   const commits = baseSha && (await optional('the commits since the previous deploy', () => github.commitsBetween(baseSha, sha)));
-  if (!commits) return;
+  if (commits) {
+    const changes = collectChanges(commits, sha);
+    await post(releaseNotesMessage({ changes, repoUrl, baseSha, headSha: sha }), threadTs);
+    console.log(`Release notes sent: ${changes.length} changes since ${baseSha.slice(0, 7)}.`);
+  }
 
-  const changes = collectChanges(commits, sha);
-  await post(releaseNotesMessage({ changes, repoUrl, baseSha, headSha: sha }), threadTs);
-  console.log(`Release notes sent: ${changes.length} changes since ${baseSha.slice(0, 7)}.`);
+  if (!pullRequest) return;
+  const body = await optional(`the description of #${pullRequest.number}`, () => github.pullRequestBody(pullRequest.number));
+  for (const message of descriptionMessages({ pullRequest, body, repoUrl })) await post(message, threadTs);
 }
 
 // A failed notification must never turn a deploy red.
