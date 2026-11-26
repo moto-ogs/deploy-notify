@@ -1,0 +1,60 @@
+name: Deploy Notify
+description: >-
+  Posts moto deploy outcomes to Slack. Production deploys and every failure
+  reach the channel; a production deploy gets its release notes as a thread reply.
+
+inputs:
+  slack_token:
+    description: Slack bot token (xoxb-…) with the chat:write scope. Empty skips the notification with a warning.
+    required: false
+    default: ''
+  channel:
+    description: Slack channel ID. The bot must be a member of the channel.
+    required: false
+    default: ''
+  status:
+    description: 'Outcome of the deploy job: pass job.status (success, failure, cancelled).'
+    required: false
+    default: ''
+  environment:
+    description: Target environment (production, staging, demo, …).
+    required: false
+    default: ''
+  app:
+    description: Application name shown in Slack (Phoenix, Website, …).
+    required: false
+    default: ''
+  version:
+    description: Version shown next to the headline, e.g. v1.11.6.
+    required: false
+    default: ''
+  exit_code:
+    description: Exit code of the deploy command, shown on failures.
+    required: false
+    default: ''
+  exit_codes:
+    description: >-
+      Set to "deploy-remote" when exit_code follows moto's deploy-remote.sh
+      (1 = aborted before deploy, 10 = rolled back, 11 = rollback failed).
+    required: false
+    default: ''
+  previous_sha:
+    description: Commit of the previous deploy. Default is the last run in which this job succeeded on this branch.
+    required: false
+    default: ''
+  message:
+    description: Free-form mrkdwn alert. When set, it is posted as is and the deploy inputs are ignored.
+    required: false
+    default: ''
+  github_token:
+    description: Token to read commits and workflow runs (contents read, actions read).
+    required: false
+    default: ${{ github.token }}
+  dry_run:
+    description: Set to "true" to print the Slack payloads instead of sending them.
+    required: false
+    default: 'false'
+
+runs:
+  using: node24
+  main: src/main.js
