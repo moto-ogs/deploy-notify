@@ -1,7 +1,8 @@
 name: Deploy Notify
 description: >-
   Posts moto deploy outcomes to Slack. Production deploys and every failure
-  reach the channel; a production deploy gets its release notes as a thread reply.
+  reach the channel; a production deploy gets its release notes and the
+  description of the deployed pull request as thread replies.
 
 inputs:
   slack_token:
@@ -43,7 +44,7 @@ inputs:
     required: false
     default: 'true'
   github_token:
-    description: Token to read commits and workflow runs (contents read, actions read).
+    description: Token to read commits, workflow runs and pull requests (contents, actions and pull-requests read).
     required: false
     default: ${{ github.token }}
   dry_run:

@@ -1,18 +1,22 @@
 'use strict';
 
-// Slack payloads (text and Block Kit) for the two messages of a deploy:
-// the line in the channel and the release notes in its thread.
+// Slack payloads (text and Block Kit) for the messages of a deploy: the line
+// in the channel and, in its thread, the release notes and the description of
+// the deployed pull request.
 
+const UNTYPED = { title: 'Änderungen' }; // titles without a known type
 const GROUPS = [
   { title: 'Neu', types: ['feat'] },
   { title: 'Behoben', types: ['fix', 'perf', 'revert'] },
-  { title: 'Änderungen', types: null }, // titles without a known type
+  UNTYPED,
+  { title: 'Sonstiges', types: ['chore', 'refactor', 'test', 'tests', 'docs', 'style', 'ci', 'build'] },
 ];
-const INTERNAL_TYPES = ['chore', 'refactor', 'test', 'tests', 'docs', 'style', 'ci', 'build'];
 const MAX_PER_GROUP = 30;
 const MAX_TITLE_LENGTH = 200;
 // Slack caps a section at 3000 characters.
 const SECTION_LIMIT = 2900;
+// Slack caps the markdown blocks of one message at 12000 characters.
+const MARKDOWN_LIMIT = 11000;
 
 function escape(text) {
   return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -53,10 +57,9 @@ function deployMessage({ outcome, app, environment, version, repoUrl, sha, pullR
 function classify(title) {
   const match = /^(\w+)(?:\([^)]*\))?!?:\s*(.+)$/.exec(title);
   const type = match ? match[1].toLowerCase() : null;
-  if (INTERNAL_TYPES.includes(type)) return { internal: true };
   const group = GROUPS.find(({ types }) => types && types.includes(type));
   // An unknown word before a colon ("Blog: …") is part of the title.
-  return group ? { group, text: match[2] } : { group: GROUPS[GROUPS.length - 1], text: title };
+  return group ? { group, text: match[2] } : { group: UNTYPED, text: title };
 }
 
 function changeLine(change, text, repoUrl) {
@@ -69,11 +72,9 @@ function changeLine(change, text, repoUrl) {
 
 function releaseNotesLines({ changes, repoUrl }) {
   const listed = new Map(GROUPS.map((group) => [group, []]));
-  let internal = 0;
   for (const change of changes) {
-    const { group, text, internal: isInternal } = classify(change.title);
-    if (isInternal) internal += 1;
-    else listed.get(group).push(changeLine(change, text, repoUrl));
+    const { group, text } = classify(change.title);
+    listed.get(group).push(changeLine(change, text, repoUrl));
   }
 
   const lines = [];
@@ -82,21 +83,18 @@ function releaseNotesLines({ changes, repoUrl }) {
     lines.push('', `*${title}*`, ...items.slice(0, MAX_PER_GROUP));
     if (items.length > MAX_PER_GROUP) lines.push(`_… und ${items.length - MAX_PER_GROUP} weitere_`);
   }
-  if (internal > 0) {
-    lines.push('', `_Dazu ${plural(internal, 'interne Änderung', 'interne Änderungen')} (Wartung, Tests, Doku)._`);
-  }
   return lines;
 }
 
-// Packs lines into as few sections as Slack's size limit allows.
-function toSections(lines) {
+// Packs lines into as few chunks of at most `limit` characters as possible.
+function pack(lines, limit) {
   const chunks = [];
   for (const line of lines) {
     const last = chunks[chunks.length - 1];
-    if (last !== undefined && last.length + 1 + line.length <= SECTION_LIMIT) chunks[chunks.length - 1] = `${last}\n${line}`;
-    else if (line !== '') chunks.push(line);
+    if (last !== undefined && last.length + 1 + line.length <= limit) chunks[chunks.length - 1] = `${last}\n${line}`;
+    else if (line.trim() !== '') chunks.push(line.slice(0, limit));
   }
-  return chunks.map(section);
+  return chunks;
 }
 
 function releaseNotesMessage({ changes, repoUrl, baseSha, headSha }) {
@@ -105,8 +103,19 @@ function releaseNotesMessage({ changes, repoUrl, baseSha, headSha }) {
   const heading = `*Release Notes* · ${summary} · ${link(`${repoUrl}/compare/${baseSha}...${headSha}`, 'Diff')}`;
   return {
     text: `Release Notes · ${summary}`,
-    blocks: toSections([heading, ...releaseNotesLines({ changes, repoUrl })]),
+    blocks: pack([heading, ...releaseNotesLines({ changes, repoUrl })], SECTION_LIMIT).map(section),
   };
 }
 
-module.exports = { deployMessage, releaseNotesMessage };
+// The description of the deployed pull request as its author wrote it, one
+// message per MARKDOWN_LIMIT characters. Slack renders the Markdown itself.
+function descriptionMessages({ pullRequest, body, repoUrl }) {
+  const visible = String(body || '').replace(/<!--[\s\S]*?-->/g, '');
+  const heading = `*Beschreibung* · ${link(`${repoUrl}/pull/${pullRequest.number}`, `#${pullRequest.number}`)}`;
+  return pack(visible.split(/\r?\n/), MARKDOWN_LIMIT).map((text, index) => ({
+    text: `Beschreibung von #${pullRequest.number}`,
+    blocks: [...(index === 0 ? [section(heading)] : []), { type: 'markdown', text }],
+  }));
+}
+
+module.exports = { deployMessage, releaseNotesMessage, descriptionMessages };

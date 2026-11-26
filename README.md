@@ -6,13 +6,15 @@ Eine Action für alle Deploy-Meldungen von moto in Slack.
 
 | Ergebnis | Production | Staging, Demo, andere |
 |---|---|---|
-| Deploy erfolgreich | Meldung, Release Notes als Antwort im Thread | nichts |
+| Deploy erfolgreich | Meldung, im Thread die Release Notes und die Beschreibung des deployten Pull Requests | nichts |
 | Deploy fehlgeschlagen | Meldung | Meldung |
 | Deploy abgebrochen (cancelled) | Meldung | nichts |
 
 Die Regel steht in der Tabelle `OUTCOMES` in [src/outcomes.js](src/outcomes.js). Wer sie ändert, ändert sie für alle Repos.
 
-Die Release Notes nennen jede Änderung seit dem letzten erfolgreichen Lauf desselben Jobs auf demselben Branch: gemergte Pull Requests und direkte Commits, gruppiert nach dem Typ im Titel (`feat:`, `fix:` …). Interne Typen wie `chore:` werden nur gezählt; die Zuordnung steht in `GROUPS` und `INTERNAL_TYPES` in [src/messages.js](src/messages.js). Ein Merge von `development` nach `main` zählt nicht selbst, sondern mit den Pull Requests, die er mitbringt.
+Die Release Notes nennen jede Änderung seit dem letzten erfolgreichen Lauf desselben Jobs auf demselben Branch: gemergte Pull Requests und direkte Commits, gruppiert nach dem Typ im Titel (`feat:`, `fix:` …). Die Zuordnung steht in `GROUPS` in [src/messages.js](src/messages.js). Ein Merge von `development` nach `main` zählt nicht selbst, sondern mit den Pull Requests, die er mitbringt.
+
+Danach folgt die Beschreibung des Pull Requests, dessen Merge deployt wurde, unverändert als Markdown. Bei einem Release ist das der Release-PR. Lange Beschreibungen verteilen sich auf mehrere Nachrichten.
 
 ## Einbau
 
@@ -20,6 +22,7 @@ Die Release Notes nennen jede Änderung seit dem letzten erfolgreichen Lauf dess
 permissions:
   contents: read
   actions: read # findet den letzten erfolgreichen Deploy
+  pull-requests: read # liest die Beschreibung des deployten Pull Requests
 
 steps:
   # … Deploy …
