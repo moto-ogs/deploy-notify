@@ -30,14 +30,13 @@ function plural(count, one, many) {
   return count === 1 ? `1 ${one}` : `${count} ${many}`;
 }
 
-function deployMessage({ outcome, app, environment, version, repoUrl, sha, pullRequest, actor, runUrl, failedStep, exitCode }) {
+function deployMessage({ outcome, app, environment, version, repoUrl, sha, pullRequest, actor, runUrl, exitCode }) {
   const target = `${app} ${environment.charAt(0).toUpperCase()}${environment.slice(1)}`.trim();
   const title = `${target}${outcome.phrase}${version ? ` · ${version}` : ''}`;
   const details = [
     pullRequest && `${link(`${repoUrl}/pull/${pullRequest.number}`, `#${pullRequest.number}`)} ${escape(pullRequest.title)}`,
     link(`${repoUrl}/commit/${sha}`, sha.slice(0, 7)),
     actor && escape(actor),
-    outcome.failed && failedStep && `Schritt „${escape(failedStep)}“`,
     outcome.failed && exitCode && exitCode !== '0' && `Exit ${escape(exitCode)}`,
     link(runUrl, outcome.failed ? 'Log ansehen' : 'Run'),
   ];

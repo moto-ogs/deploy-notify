@@ -48,9 +48,6 @@ async function run() {
   const github = createGitHub({ apiUrl: env.GITHUB_API_URL, token: input('github_token'), repo });
   const post = createSlack({ token, channel, dryRun });
 
-  const job = await optional('the current job', () =>
-    github.currentJob({ runId: env.GITHUB_RUN_ID, runAttempt: env.GITHUB_RUN_ATTEMPT, runnerName: env.RUNNER_NAME }),
-  );
   const headMessage = await optional('the deployed commit', () => github.commitMessage(sha));
 
   const threadTs = await post(
@@ -64,22 +61,21 @@ async function run() {
       pullRequest: headMessage && parsePullRequest(headMessage),
       actor: env.GITHUB_ACTOR,
       runUrl: `${repoUrl}/actions/runs/${env.GITHUB_RUN_ID}`,
-      failedStep: job && job.failedStep,
       exitCode,
     }),
   );
   console.log(`Slack message sent for "${outcome.name}" on "${environment}".`);
-  if (!outcome.releaseNotes || !job) return;
+  if (!outcome.releaseNotes) return;
 
   // GITHUB_WORKFLOW_REF: owner/repo/.github/workflows/deploy.yml@refs/heads/main
   const workflowFile = env.GITHUB_WORKFLOW_REF.split('@')[0].split('/').pop();
-  const baseSha = await optional('the previous deploy', () =>
+  const baseSha = await optional('the previous deploy', async () =>
     github.previousDeploySha({
       workflowFile,
       branch: env.GITHUB_REF_NAME,
       runNumber: Number(env.GITHUB_RUN_NUMBER),
       sha,
-      jobName: job.name,
+      jobName: await github.currentJobName({ runId: env.GITHUB_RUN_ID, runAttempt: env.GITHUB_RUN_ATTEMPT, runnerName: env.RUNNER_NAME }),
     }),
   );
   const commits = baseSha && (await optional('the commits since the previous deploy', () => github.commitsBetween(baseSha, sha)));

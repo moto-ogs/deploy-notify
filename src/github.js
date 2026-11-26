@@ -26,14 +26,13 @@ function createGitHub({ apiUrl, token, repo }) {
       return (await get(`/commits/${sha}`)).commit.message;
     },
 
-    // The job this step runs in, found by its runner: its display name
-    // identifies the same job in earlier runs, its steps show what failed.
-    async currentJob({ runId, runAttempt, runnerName }) {
+    // The display name of the job this step runs in, found by its runner. It
+    // identifies the same job in earlier runs.
+    async currentJobName({ runId, runAttempt, runnerName }) {
       const { jobs } = await get(`/actions/runs/${runId}/attempts/${runAttempt}/jobs?per_page=100`);
       const job = jobs.find((candidate) => candidate.status === 'in_progress' && candidate.runner_name === runnerName);
       if (!job) throw new Error(`no running job on runner "${runnerName}"`);
-      const failedStep = job.steps.find((step) => step.conclusion === 'failure');
-      return { name: job.name, failedStep: failedStep ? failedStep.name : null };
+      return job.name;
     },
 
     // The commit of the last earlier run in which the same job succeeded on

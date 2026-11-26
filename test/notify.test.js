@@ -158,7 +158,6 @@ test('deploy message: success line and failure details', () => {
     outcome: resolveOutcome({ status: 'success' }),
     environment: 'production',
     version: 'v1.2.3',
-    failedStep: null,
     exitCode: '0',
   });
   assert.equal(ok.text, '🚀 Phoenix Production deployed · v1.2.3');
@@ -173,12 +172,11 @@ test('deploy message: success line and failure details', () => {
     outcome: resolveOutcome({ status: 'failure', exitCode: '10', exitCodes: 'deploy-remote' }),
     environment: 'staging',
     pullRequest: null,
-    failedStep: 'Deploy to staging',
     exitCode: '10',
   });
   assert.equal(failed.text, '⚠️ Phoenix Staging: Deploy fehlgeschlagen, zurückgerollt');
   assert.equal(
     failed.blocks[1].elements[0].text,
-    `<${REPO}/commit/1234567890abcdef|1234567>  ·  yonnock  ·  Schritt „Deploy to staging“  ·  Exit 10  ·  <${REPO}/actions/runs/1|Log ansehen>`,
+    `<${REPO}/commit/1234567890abcdef|1234567>  ·  yonnock  ·  Exit 10  ·  <${REPO}/actions/runs/1|Log ansehen>`,
   );
 });
