@@ -22,9 +22,11 @@ jobs:
 
   # Runs the action the way a deploy workflow does, printing the Slack
   # payloads instead of sending them. Covers what unit tests cannot: the
-  # runner's Node version, the inputs and the GitHub API lookups.
+  # runner's Node version, the inputs and the GitHub API lookups. A dry run
+  # fails on any warning. Only on main: a pull request has no earlier deploy.
   dry-run-deployed:
     name: Dry run, production deployed
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:
@@ -42,6 +44,7 @@ jobs:
 
   dry-run-failed:
     name: Dry run, staging failed
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     # The job fails on purpose; the run stays green.

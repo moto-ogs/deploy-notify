@@ -10,8 +10,11 @@ function input(name) {
   return (process.env[`INPUT_${name.toUpperCase()}`] || '').trim();
 }
 
+// A warning never fails a deploy. In a dry run it fails the step, so CI
+// notices a lookup that stopped working.
 function warn(message) {
   console.log(`::warning::${message}`);
+  if (input('dry_run') === 'true') process.exitCode = 1;
 }
 
 // Context makes the message richer but is never worth losing the message.
@@ -37,6 +40,10 @@ async function run() {
   const environment = input('environment').toLowerCase();
   const exitCode = input('exit_code');
   const outcome = resolveOutcome({ status: input('status'), exitCode, exitCodes: input('exit_codes') });
+  if (!outcome) {
+    warn(`Unknown status "${input('status')}", pass job.status`);
+    return;
+  }
   if (!reachesChannel(outcome, environment)) {
     console.log(`No Slack message for "${outcome.name}" on "${environment}".`);
     return;
@@ -65,18 +72,21 @@ async function run() {
     }),
   );
   console.log(`Slack message sent for "${outcome.name}" on "${environment}".`);
-  if (!outcome.releaseNotes) return;
+  if (!outcome.releaseNotes || input('release_notes') === 'false') return;
 
-  // GITHUB_WORKFLOW_REF: owner/repo/.github/workflows/deploy.yml@refs/heads/main
-  const workflowFile = env.GITHUB_WORKFLOW_REF.split('@')[0].split('/').pop();
-  const baseSha = await optional('the previous deploy', async () =>
-    github.previousDeploySha({
-      workflowFile,
-      branch: env.GITHUB_REF_NAME,
-      runNumber: Number(env.GITHUB_RUN_NUMBER),
+  const baseSha = await optional('the previous deploy', () =>
+    github.previousDeploySha(
+      {
+        id: env.GITHUB_RUN_ID,
+        attempt: env.GITHUB_RUN_ATTEMPT,
+        number: Number(env.GITHUB_RUN_NUMBER),
+        runnerName: env.RUNNER_NAME,
+        // owner/repo/.github/workflows/deploy.yml@refs/heads/main
+        workflowFile: env.GITHUB_WORKFLOW_REF.split('@')[0].split('/').pop(),
+        branch: env.GITHUB_REF_NAME,
+      },
       sha,
-      jobName: await github.currentJobName({ runId: env.GITHUB_RUN_ID, runAttempt: env.GITHUB_RUN_ATTEMPT, runnerName: env.RUNNER_NAME }),
-    }),
+    ),
   );
   const commits = baseSha && (await optional('the commits since the previous deploy', () => github.commitsBetween(baseSha, sha)));
   if (!commits) return;

@@ -45,6 +45,8 @@ test('deploy-remote exit codes are read only on request', () => {
   assert.equal(name('failure', '10', ''), 'failure');
   assert.equal(name('success', '0', 'deploy-remote'), 'success');
   assert.equal(name('cancelled', '10', 'deploy-remote'), 'cancelled');
+  assert.equal(resolveOutcome({ status: 'skipped' }), null);
+  assert.equal(resolveOutcome({ status: '' }), null);
 });
 
 test('reads the pull request from merge and squash commits', () => {

@@ -12,7 +12,7 @@ Eine Action für alle Deploy-Meldungen von moto in Slack.
 
 Die Regel steht in der Tabelle `OUTCOMES` in [src/outcomes.js](src/outcomes.js). Wer sie ändert, ändert sie für alle Repos.
 
-Die Release Notes nennen jede Änderung seit dem letzten erfolgreichen Lauf desselben Jobs auf demselben Branch: gemergte Pull Requests und direkte Commits, gruppiert nach `feat` (Neu), `fix` (Behoben) und Titeln ohne Präfix (Änderungen). `chore`, `refactor`, `test`, `docs`, `ci` und `build` werden nur gezählt. Ein Merge von `development` nach `main` zählt nicht selbst, sondern mit den Pull Requests, die er mitbringt.
+Die Release Notes nennen jede Änderung seit dem letzten erfolgreichen Lauf desselben Jobs auf demselben Branch: gemergte Pull Requests und direkte Commits, gruppiert nach dem Typ im Titel (`feat:`, `fix:` …). Interne Typen wie `chore:` werden nur gezählt; die Zuordnung steht in `GROUPS` und `INTERNAL_TYPES` in [src/messages.js](src/messages.js). Ein Merge von `development` nach `main` zählt nicht selbst, sondern mit den Pull Requests, die er mitbringt.
 
 ## Einbau
 
@@ -34,7 +34,7 @@ steps:
       app: Website
 ```
 
-Weitere Eingaben stehen in [action.yml](action.yml): `version`, `exit_code`, `exit_codes: deploy-remote`, `dry_run`.
+Alle Eingaben stehen in [action.yml](action.yml).
 
 Die Action lässt einen Job nie scheitern: Fehler beim Senden erscheinen als Warnung im Log.
 

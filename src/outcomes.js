@@ -17,11 +17,12 @@ const OUTCOMES = {
 // with exit_codes=deploy-remote; rsync, for one, uses 10 and 11 differently.
 const DEPLOY_REMOTE_EXIT_CODES = { 1: 'aborted', 10: 'rolled_back', 11: 'rollback_failed' };
 
-// `status` is GitHub's job.status: success, failure or cancelled.
+// `status` is GitHub's job.status: success, failure or cancelled. Anything
+// else is a caller's mistake and has no outcome.
 function resolveOutcome({ status, exitCode, exitCodes }) {
   const fromExitCode = exitCodes === 'deploy-remote' ? DEPLOY_REMOTE_EXIT_CODES[exitCode] : undefined;
   const name = status === 'failure' && fromExitCode ? fromExitCode : status;
-  return { name, ...(OUTCOMES[name] || OUTCOMES.failure) };
+  return Object.hasOwn(OUTCOMES, name) ? { name, ...OUTCOMES[name] } : null;
 }
 
 function reachesChannel(outcome, environment) {

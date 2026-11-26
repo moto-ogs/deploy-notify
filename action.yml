@@ -33,11 +33,15 @@ inputs:
     required: false
     default: ''
   exit_codes:
-    description: >-
-      Set to "deploy-remote" when exit_code follows moto's deploy-remote.sh
-      (1 = aborted before deploy, 10 = rolled back, 11 = rollback failed).
+    description: Set to "deploy-remote" when exit_code follows moto's deploy-remote.sh, see src/outcomes.js.
     required: false
     default: ''
+  release_notes:
+    description: >-
+      Set to "false" when the commits since the last deploy do not describe
+      what this job ships, e.g. a config deploy from an application repository.
+    required: false
+    default: 'true'
   github_token:
     description: Token to read commits and workflow runs (contents read, actions read).
     required: false
