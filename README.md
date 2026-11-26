@@ -22,7 +22,7 @@ Danach folgt die Beschreibung des Pull Requests, dessen Merge deployt wurde, unv
 permissions:
   contents: read
   actions: read # findet den letzten erfolgreichen Deploy
-  pull-requests: read # liest die Beschreibung des deployten Pull Requests
+  pull-requests: read # liest die Beschreibung des deployten Pull Requests, nötig in privaten Repos
 
 steps:
   # … Deploy …
