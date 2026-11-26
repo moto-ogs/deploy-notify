@@ -160,9 +160,3 @@ test('deploy message: success line and failure details', () => {
     `<${REPO}/commit/1234567890abcdef|1234567>  ·  yonnock  ·  Schritt „Deploy to staging“  ·  Exit 10  ·  <${REPO}/actions/runs/1|Log ansehen>`,
   );
 });
-
-test('custom message is posted as written with a run link', () => {
-  const message = lib.customMessage({ message: ':rotating_light: Demo nicht erreichbar', runUrl: `${REPO}/actions/runs/1` });
-  assert.equal(message.blocks[0].text.text, ':rotating_light: Demo nicht erreichbar');
-  assert.equal(message.blocks[1].elements[0].text, `<${REPO}/actions/runs/1|Run>`);
-});

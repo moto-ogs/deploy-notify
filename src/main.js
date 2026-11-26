@@ -106,12 +106,6 @@ async function run() {
   const runUrl = `${repoUrl}/actions/runs/${env.GITHUB_RUN_ID}`;
   const post = (message, threadTs) => postToSlack({ token, channel, message, threadTs, dryRun });
 
-  const message = input('message');
-  if (message) {
-    await post(lib.customMessage({ message, runUrl }));
-    return;
-  }
-
   const environment = input('environment').toLowerCase();
   const exitCode = input('exit_code');
   const outcome = lib.resolveOutcome({ status: input('status'), exitCode, exitCodes: input('exit_codes') });

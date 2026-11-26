@@ -217,14 +217,6 @@ function deployMessage({ outcome, app, environment, version, repoUrl, sha, pullR
   };
 }
 
-// Free-form alert (uptime probe, smoke test). The caller writes the mrkdwn.
-function customMessage({ message, runUrl }) {
-  return {
-    text: message,
-    blocks: [{ type: 'section', text: { type: 'mrkdwn', text: message.slice(0, 3000) } }, contextBlock([link(runUrl, 'Run')])],
-  };
-}
-
 function releaseNotesMessage(notes) {
   const text = releaseNotesText(notes);
   return { text: firstLine(text).replace(/[*_]/g, ''), blocks: toSections(text).slice(0, 50) };
@@ -240,6 +232,5 @@ module.exports = {
   releaseNotesText,
   releaseNotesMessage,
   deployMessage,
-  customMessage,
   toSections,
 };

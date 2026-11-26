@@ -42,10 +42,6 @@ inputs:
     description: Commit of the previous deploy. Default is the last run in which this job succeeded on this branch.
     required: false
     default: ''
-  message:
-    description: Free-form mrkdwn alert. When set, it is posted as is and the deploy inputs are ignored.
-    required: false
-    default: ''
   github_token:
     description: Token to read commits and workflow runs (contents read, actions read).
     required: false

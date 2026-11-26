@@ -36,16 +36,6 @@ steps:
 
 Weitere Eingaben stehen in [action.yml](action.yml): `version`, `exit_code`, `exit_codes: deploy-remote`, `previous_sha`, `dry_run`.
 
-Für Alarme außerhalb eines Deploys (Uptime, Smoke-Test) schickt `message` einen eigenen Text, ohne die Regel oben:
-
-```yaml
-  - uses: moto-ogs/deploy-notify@v1
-    with:
-      slack_token: ${{ secrets.SLACK_BOT_TOKEN }}
-      channel: ${{ vars.SLACK_DEPLOY_CHANNEL }}
-      message: ':rotating_light: Demo nicht erreichbar'
-```
-
 Die Action lässt einen Job nie scheitern: Fehler beim Senden erscheinen als Warnung im Log.
 
 ## Slack-App
