@@ -38,10 +38,6 @@ inputs:
       (1 = aborted before deploy, 10 = rolled back, 11 = rollback failed).
     required: false
     default: ''
-  previous_sha:
-    description: Commit of the previous deploy. Default is the last run in which this job succeeded on this branch.
-    required: false
-    default: ''
   github_token:
     description: Token to read commits and workflow runs (contents read, actions read).
     required: false

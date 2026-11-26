@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   test:
+    name: Unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -18,3 +19,46 @@ jobs:
         with:
           node-version: 24
       - run: node --test
+
+  # Runs the action the way a deploy workflow does, printing the Slack
+  # payloads instead of sending them. Covers what unit tests cannot: the
+  # runner's Node version, the inputs and the GitHub API lookups.
+  dry-run-deployed:
+    name: Dry run, production deployed
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./
+        with:
+          dry_run: 'true'
+          status: ${{ job.status }}
+          environment: production
+          app: Deploy Notify
+          version: v0.0.0
+
+  dry-run-failed:
+    name: Dry run, staging failed
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    # The job fails on purpose; the run stays green.
+    continue-on-error: true
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fail on purpose
+        run: exit 10
+      - uses: ./
+        if: always()
+        with:
+          dry_run: 'true'
+          status: ${{ job.status }}
+          environment: staging
+          app: Deploy Notify
+          exit_code: '10'
+          exit_codes: deploy-remote
